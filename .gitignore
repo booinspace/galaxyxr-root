@@ -1,0 +1,9 @@
+/work/
+*.apk
+*.ko
+*.zip
+*.jks
+*.p12
+*.pem
+*.pass
+local.properties
