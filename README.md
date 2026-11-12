@@ -13,6 +13,11 @@ temporarily; a full reboot removes the loaded kernel module, while anything
 written under `/data/adb` or changed with root can persist. This build is
 specific to AZJ2 and does not establish support for a later OTA.
 
+The [AZJ2 root release](https://github.com/booinspace/galaxyxr-root/releases/tag/azj2-root-2026.11.12)
+provides the two locally signed APKs and a checksum file. Both APKs match those
+installed on the AZJ2 test headset byte for byte. Read the install and recovery
+steps below before running DirtyFrag.
+
 ## Requirements
 
 - Linux x86-64 or WSL2 with Docker, enough disk and memory for a full Android
