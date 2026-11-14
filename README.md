@@ -112,8 +112,15 @@ same SDK packages installed by [`setup-sdk.sh`](scripts/setup-sdk.sh). Set
 The build intentionally creates a new local Manager signing identity if none
 exists. To update a Manager already installed from an earlier local build,
 restore **that build's** `manager-azj2.p12` and `manager-azj2.pass` into
-`work/keys/` before running. Android rejects an in-place update signed by a
-different key. Back up those files securely; neither is part of this repo.
+`work/keys/` before running. Update Hold also uses `work/keys/`, with its own
+`update-hold.p12` and `update-hold.pass`. Android rejects an in-place update
+signed by a different key. Back up these files securely; the public GitHub
+tree contains no private signing keys.
+
+The DirtyFrag keystore found in the earlier WSL build has a different
+certificate from the published `DirtyFrag-AZJ2-local.apk`. It can sign future
+builds, but those APKs cannot update the published one in place. The matching
+DirtyFrag release key has not been found.
 
 ## Install and recover
 

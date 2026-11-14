@@ -4,7 +4,7 @@ set -euo pipefail
 app_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 repo=$(cd "$app_dir/../.." && pwd)
 work=${XR_WORKDIR:-$repo/work}
-key_dir=${XDG_DATA_HOME:-$HOME/.local/share}/galaxyxr-root
+key_dir=$work/keys
 keystore=$key_dir/update-hold.p12
 pass_file=$key_dir/update-hold.pass
 
@@ -24,6 +24,12 @@ fi
 
 umask 077
 mkdir -p "$key_dir"
+if [[ -e $keystore || -e $pass_file ]]; then
+    [[ -f $keystore && -f $pass_file ]] || {
+        echo 'Incomplete Update Hold signing identity in work/keys; restore both files' >&2
+        exit 2
+    }
+fi
 if [[ ! -f $pass_file ]]; then
     openssl rand -hex 24 > "$pass_file"
 fi

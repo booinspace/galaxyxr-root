@@ -102,17 +102,17 @@ docker run --rm -it --platform linux/amd64 \
   '
 ```
 
-The script creates a dedicated signing key and password under
-`~/.local/share/galaxyxr-root/` on the build host, then signs and verifies
+The script keeps its signing key and password in `work/keys/` alongside the
+KernelSU GXR and DirtyFrag signing files, then signs and verifies
 `work/output/GXR-Update-Hold-0.1.0.apk`. `XR_WORKDIR` can select a different
-working directory. In Docker, the signing files stay in `work/home/` on the
-host. Keep both files for future builds; they are excluded from this repository.
+working directory. Keep both `update-hold.p12` and `update-hold.pass` for future
+builds. The public GitHub tree excludes signing keys.
 
 Published APKs and checksums are attached to
 [GitHub Releases](https://github.com/booinspace/galaxyxr-root/releases/tag/update-hold-v0.1.0).
-The source tree contains no built APKs. A new local build uses your own key and
-cannot update the published APK in place. Keep the original signing identity
-for updates to any locally built installation.
+The source tree contains no built APKs. A new build without the original key
+creates its own identity and cannot update the published APK in place. Keep the
+original signing identity for updates to an installed copy.
 
 ## Source and license
 
