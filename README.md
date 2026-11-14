@@ -22,6 +22,11 @@ provides the two locally signed APKs and a checksum file. Both APKs match those
 installed on the AZJ2 test headset byte for byte. Read the install and recovery
 steps below before running DirtyFrag.
 
+## Module catalogue
+
+The manager build includes booinspace and upstream module sources. See the
+[catalogue patch and manager-only rebuild guide](docs/MODULE-CATALOGUE.md).
+
 ## XR Update Hold
 
 [Download XR Update Hold 0.1.0](https://github.com/booinspace/galaxyxr-root/releases/download/update-hold-v0.1.0/GXR-Update-Hold-0.1.0.apk)

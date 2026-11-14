@@ -1,13 +1,19 @@
+# Local build inputs, including private LFS archives and signing identities.
 /work/
 /releases/
+
+# Generated packages and signing material must not enter the public mirror.
 *.apk
 *.ko
 *.zip
 *.jks
 *.keystore
 *.p12
+*.pfx
 *.pem
 *.key
 *.pk8
+*.p8
+*.ppk
 *.pass
 local.properties

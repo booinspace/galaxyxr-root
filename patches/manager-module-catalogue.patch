@@ -1,0 +1,101 @@
+diff --git a/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSource.kt b/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSource.kt
+index 83a33fe..d84c086 100644
+--- a/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSource.kt
++++ b/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSource.kt
+@@ -21,7 +21,15 @@ data class SourcePackage(
+ )
+ 
+ object GitHubModuleSource {
+-    const val DEFAULT = "4uva4ek/galaxyxr-modules"
++    const val DEFAULT = "booinspace/galaxyxr-modules"
++    val DEFAULTS = listOf(DEFAULT, "4uva4ek/galaxyxr-modules")
++
++    internal fun initialRepositories(stored: List<String>?, defaultsAdded: Boolean): List<String> =
++        when {
++            stored == null -> DEFAULTS
++            defaultsAdded -> stored
++            else -> (listOf(DEFAULT) + stored).distinct()
++        }
+ 
+     fun repository(input: String): String {
+         val text = input.trim().removeSuffix("/").removeSuffix(".git")
+diff --git a/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/ModuleSourceRegistry.kt b/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/ModuleSourceRegistry.kt
+index bc0c775..4168ad8 100644
+--- a/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/ModuleSourceRegistry.kt
++++ b/manager/app/src/main/java/me/weishu/kernelsu/ui/util/module/ModuleSourceRegistry.kt
+@@ -13,14 +13,25 @@ object ModuleSourceRegistry {
+ 
+     fun feed(id: String): String? = feeds[id]
+ 
+-    suspend fun refresh() = withContext(Dispatchers.IO) {
++    fun repositories(): List<String> {
+         val prefs = ksuApp.getSharedPreferences("module-sources", Context.MODE_PRIVATE)
+-        val repositories = if (!prefs.contains("repositories")) listOf(GitHubModuleSource.DEFAULT) else {
++        val stored = if (!prefs.contains("repositories")) null else {
+             runCatching {
+                 val saved = JSONArray(prefs.getString("repositories", "[]"))
+                 (0 until saved.length()).map { GitHubModuleSource.repository(saved.getString(it)) }.distinct()
+             }.getOrDefault(emptyList())
+         }
++        val defaultsAdded = prefs.getBoolean("booinspace-default-added", false)
++        val repositories = GitHubModuleSource.initialRepositories(stored, defaultsAdded)
++        if (!defaultsAdded) {
++            prefs.edit().putString("repositories", JSONArray(repositories).toString())
++                .putBoolean("booinspace-default-added", true).apply()
++        }
++        return repositories
++    }
++
++    suspend fun refresh() = withContext(Dispatchers.IO) {
++        val repositories = repositories()
+         val catalogues = repositories.mapNotNull { repository ->
+             try {
+                 GitHubModuleSource.catalogue(repository)?.let(GitHubModuleSource::catalogueFeeds)
+diff --git a/manager/app/src/main/java/me/weishu/kernelsu/ui/viewmodel/ModuleSourcesViewModel.kt b/manager/app/src/main/java/me/weishu/kernelsu/ui/viewmodel/ModuleSourcesViewModel.kt
+index 8e138b0..ff6773b 100644
+--- a/manager/app/src/main/java/me/weishu/kernelsu/ui/viewmodel/ModuleSourcesViewModel.kt
++++ b/manager/app/src/main/java/me/weishu/kernelsu/ui/viewmodel/ModuleSourcesViewModel.kt
+@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
+ import kotlinx.coroutines.withContext
+ import me.weishu.kernelsu.ksuApp
+ import me.weishu.kernelsu.ui.util.module.GitHubModuleSource
++import me.weishu.kernelsu.ui.util.module.ModuleSourceRegistry
+ import me.weishu.kernelsu.ui.util.module.SourcePackage
+ import okhttp3.Request
+ import org.json.JSONArray
+@@ -33,11 +34,7 @@ data class ModuleSourcesState(
+ 
+ class ModuleSourcesViewModel : ViewModel() {
+     private val prefs = ksuApp.getSharedPreferences("module-sources", Context.MODE_PRIVATE)
+-    private val stored = runCatching {
+-        val array = JSONArray(prefs.getString("repositories", "[]"))
+-        (0 until array.length()).map { GitHubModuleSource.repository(array.getString(it)) }.distinct()
+-    }.getOrDefault(emptyList())
+-    private val sources = if (prefs.contains("repositories")) stored else listOf(GitHubModuleSource.DEFAULT)
++    private val sources = ModuleSourceRegistry.repositories()
+     private val _state = MutableStateFlow(ModuleSourcesState(sources = sources,
+         active = prefs.getString("active", null)?.takeIf { it == "official" || it in sources } ?: sources.firstOrNull() ?: "official"))
+     val state = _state.asStateFlow()
+diff --git a/manager/app/src/test/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSourceTest.kt b/manager/app/src/test/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSourceTest.kt
+index 58b870d..a6ce3de 100644
+--- a/manager/app/src/test/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSourceTest.kt
++++ b/manager/app/src/test/java/me/weishu/kernelsu/ui/util/module/GitHubModuleSourceTest.kt
+@@ -7,6 +7,18 @@ import java.util.zip.ZipEntry
+ import java.util.zip.ZipOutputStream
+ 
+ class GitHubModuleSourceTest {
++    @Test fun localBuildAddsBothSourcesAndMigratesExistingPreferencesOnce() {
++        val local = "booinspace/galaxyxr-modules"
++        val upstream = "4uva4ek/galaxyxr-modules"
++        assertEquals(listOf(local, upstream), GitHubModuleSource.initialRepositories(null, false))
++        assertEquals(listOf(local, upstream, "owner/custom"),
++            GitHubModuleSource.initialRepositories(listOf(upstream, "owner/custom"), false))
++        assertEquals(listOf(local, upstream),
++            GitHubModuleSource.initialRepositories(listOf(local, upstream), false))
++        assertEquals(listOf(upstream), GitHubModuleSource.initialRepositories(listOf(upstream), true))
++        assertEquals(emptyList<String>(), GitHubModuleSource.initialRepositories(emptyList(), true))
++    }
++
+     @Test fun repositoryLinksAreCanonicalAndBounded() {
+         assertEquals("owner/repo", GitHubModuleSource.repository("https://github.com/Owner/Repo.git/"))
+         assertEquals("owner/repo", GitHubModuleSource.repository("owner/repo"))

@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+mode=${1:-all}
+[[ $# -le 1 && ( $mode == all || $mode == --manager-only ) ]] || {
+    echo 'Usage: build-gxr-azj2.sh [--manager-only]' >&2; exit 2;
+}
 work=${XR_WORKDIR:-/work}
 gxr="$work/upstream/KernelSU-GXR"
 kernel="$work/source/kernel_platform/msm-kernel"
@@ -16,8 +21,14 @@ keystore=${GXR_KEYSTORE:-$keydir/manager-azj2.p12}
 pass_file=${GXR_SIGN_PASS_FILE:-$keydir/manager-azj2.pass}
 expected_release=5.10.240-android12-9-perf-33775878-abI610UES3AZJ2
 
-for input in "$kernel_out/vmlinux" "$kernel_out/Module.symvers" "$gxr/Cargo.lock" \
-             "$keystore" "$pass_file" "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang"; do
+base_apk=${GXR_BASE_MANAGER_APK:-$out/KernelSU-GXR-AZJ2-local.apk}
+inputs=("$keystore" "$pass_file" "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang")
+if [[ $mode == all ]]; then
+    inputs+=("$kernel_out/vmlinux" "$kernel_out/Module.symvers" "$gxr/Cargo.lock")
+else
+    inputs+=("$base_apk")
+fi
+for input in "${inputs[@]}"; do
     [[ -f $input ]] || { echo "Missing build input: $input" >&2; exit 2; }
 done
 mkdir -p "$out"
@@ -30,6 +41,7 @@ cert_size=$(stat -c %s "$out/manager-azj2.cert.der")
 cert_hash=$(sha256sum "$out/manager-azj2.cert.der" | cut -d ' ' -f 1)
 (( cert_size <= 2048 )) || { echo 'Manager certificate exceeds patched KernelSU limit' >&2; exit 1; }
 
+if [[ $mode == all ]]; then
 args=(-C "$kernel" O="$kernel_out" ARCH=arm64 LLVM=1 LLVM_IAS=1 \
       CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
       M="$gxr/kernel" CONFIG_KSU=m CONFIG_KSU_SAMSUNG_KDP=y \
@@ -79,19 +91,37 @@ cargo build --locked --package ksud --target aarch64-linux-android --release \
     exit 1
 }
 cp "$CARGO_TARGET_DIR/aarch64-linux-android/release/ksud" "$out/ksud-azj2"
+else
+    # Reuse the signed, certificate-matched daemon; it embeds the existing root components.
+    "$ANDROID_HOME/build-tools/37.0.0/apksigner" verify --print-certs "$base_apk" > "$out/base-apk-certs.txt"
+    grep -F "certificate SHA-256 digest: $cert_hash" "$out/base-apk-certs.txt" >/dev/null || {
+        echo 'Base APK and Manager signing identity differ; refusing a manager-only rebuild' >&2; exit 1;
+    }
+    python3 - "$base_apk" "$out/ksud-azj2" <<'PYCODE'
+import pathlib, sys, zipfile
+with zipfile.ZipFile(sys.argv[1]) as apk:
+    data = apk.read('lib/arm64-v8a/libksud.so')
+if data[:6] != b'\x7fELF\x02\x01' or data[18:20] != b'\xb7\x00':
+    raise SystemExit('Base Manager does not contain an ARM64 daemon')
+pathlib.Path(sys.argv[2]).write_bytes(data)
+PYCODE
+fi
+bash "$repo/scripts/patch-gxr-manager.sh" "$gxr"
 mkdir -p "$gxr/manager/app/src/main/jniLibs/arm64-v8a"
 cp "$out/ksud-azj2" "$gxr/manager/app/src/main/jniLibs/arm64-v8a/libksud.so"
 (
-    cd manager
-    bash gradlew clean assembleRelease -Pandroid.injected.build.abi=arm64-v8a \
+    cd "$gxr/manager"
+    bash gradlew clean :app:testDebugUnitTest --tests me.weishu.kernelsu.ui.util.module.GitHubModuleSourceTest assembleRelease -Pandroid.injected.build.abi=arm64-v8a \
         -Pandroid.injected.testOnly=false \
-        -PKSU_VERSION_NAME=gxr-v1.0.16-azj2-local2 -PKSU_VERSION_CODE=32684
+        -PKSU_VERSION_NAME=gxr-v1.0.16-azj2-local3 -PKSU_VERSION_CODE=32685
 ) > "$out/manager-build.log" 2>&1 || {
     tail -80 "$out/manager-build.log" >&2
     exit 1
 }
 mapfile -t apks < <(find "$gxr/manager/app/build/intermediates/apk/release" -maxdepth 1 -name '*.apk')
 [[ ${#apks[@]} == 1 ]] || { echo "Expected one Manager APK" >&2; exit 1; }
+apk_name=KernelSU-GXR-AZJ2-local.apk
+[[ $mode != --manager-only ]] || apk_name=KernelSU-GXR-AZJ2-catalogue.apk
 bt="$ANDROID_HOME/build-tools/37.0.0"
 ndk_bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
 "$bt/zipalign" -f -P 16 4 "${apks[0]}" "$out/manager-aligned.apk"
@@ -99,17 +129,21 @@ ndk_bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
     --ks-pass env:GXR_SIGN_PASS --key-pass env:GXR_SIGN_PASS \
     --v1-signing-enabled false --v2-signing-enabled true \
     --v3-signing-enabled false --v4-signing-enabled false \
-    --out "$out/KernelSU-GXR-AZJ2-local.apk" "$out/manager-aligned.apk"
+    --out "$out/$apk_name" "$out/manager-aligned.apk"
 unset GXR_SIGN_PASS
-"$bt/apksigner" verify --verbose --print-certs "$out/KernelSU-GXR-AZJ2-local.apk" \
+"$bt/apksigner" verify --verbose --print-certs "$out/$apk_name" \
     > "$out/apksigner-verify.txt"
-"$bt/zipalign" -c -P 16 4 "$out/KernelSU-GXR-AZJ2-local.apk"
+"$bt/zipalign" -c -P 16 4 "$out/$apk_name"
 grep -F "V2 Signer: certificate SHA-256 digest: $cert_hash" "$out/apksigner-verify.txt" >/dev/null
 grep -F "Verified using v2 scheme (APK Signature Scheme v2): true" "$out/apksigner-verify.txt" >/dev/null
 grep -F "Verified using v3 scheme (APK Signature Scheme v3): false" "$out/apksigner-verify.txt" >/dev/null
 "$ndk_bin/llvm-strip" --strip-unneeded "$out/ksud-azj2" -o "$out/ksud-stripped"
-python3 "$gxr/scripts/gxr-apk.py" verify-source "$out/KernelSU-GXR-AZJ2-local.apk" "$out/ksud-stripped"
-"$bt/aapt2" dump badging "$out/KernelSU-GXR-AZJ2-local.apk" > "$out/apk-badging.txt"
-grep -F "package: name='me.weishu.kernelsu' versionCode='32684' versionName='samsung-gxr-v1.0.16-azj2-local2'" "$out/apk-badging.txt" >/dev/null
-(cd "$out" && sha256sum KernelSU-GXR-AZJ2-local.apk kernelsu-azj2.ko ksud-azj2 manager-azj2.cert.der > SHA256SUMS.txt)
+python3 "$gxr/scripts/gxr-apk.py" verify-source "$out/$apk_name" "$out/ksud-stripped"
+"$bt/aapt2" dump badging "$out/$apk_name" > "$out/apk-badging.txt"
+grep -F "package: name='me.weishu.kernelsu' versionCode='32685' versionName='samsung-gxr-v1.0.16-azj2-local3'" "$out/apk-badging.txt" >/dev/null
+if [[ $mode == all ]]; then
+    (cd "$out" && sha256sum "$apk_name" kernelsu-azj2.ko ksud-azj2 manager-azj2.cert.der > SHA256SUMS.txt)
+else
+    (cd "$out" && sha256sum "$apk_name" > SHA256SUMS-manager.txt)
+fi
 echo "Built AZJ2 GXR artifacts in $out"

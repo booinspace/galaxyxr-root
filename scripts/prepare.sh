@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 work=${XR_WORKDIR:-/work}
 inputs=${XR_INPUT_DIR:-$work/inputs}
 upstream=$work/upstream
@@ -98,4 +99,5 @@ fi
     echo 'KernelSU GXR certificate-length patch did not apply' >&2
     exit 1
 }
+bash "$repo/scripts/patch-gxr-manager.sh" "$upstream/KernelSU-GXR"
 echo "AZJ2 build inputs prepared in $work"
