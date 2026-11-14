@@ -11,7 +11,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bc binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi bison build-essential ca-certificates \
     cmake cpio curl dwarves file flex git kmod libclang-dev libelf-dev \
-    libssl-dev ninja-build openjdk-21-jdk-headless pkg-config python3 \
+    libssl-dev ninja-build openjdk-21-jdk-headless pkg-config python3 python-is-python3 \
     openssl rsync unzip xz-utils zip zstd \
     && rm -rf /var/lib/apt/lists/*
 

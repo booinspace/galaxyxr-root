@@ -11,7 +11,7 @@ clang_bin=${XR_CLANG_BIN:-$work/aosp-clang/clang-r416183b/bin}
 expected=5.10.240-android12-9-perf-33775878-abI610UES3AZJ2
 
 [[ -d $kernel && -x $clang_bin/clang ]] || {
-    echo "Extract Samsung source and install AOSP clang-r416183b first; see docs/BUILD.md" >&2
+    echo "Missing prepared source or AOSP clang in $work; run build-all.sh in the container (README.md, Build section)" >&2
     exit 2
 }
 mkdir -p "$out" "$release_dir"

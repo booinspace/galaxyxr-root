@@ -7,6 +7,7 @@ mode=${1:-all}
     echo 'Usage: build-gxr-azj2.sh [--manager-only]' >&2; exit 2;
 }
 work=${XR_WORKDIR:-/work}
+export GRADLE_USER_HOME=${GRADLE_USER_HOME:-$work/gradle}
 gxr="$work/upstream/KernelSU-GXR"
 kernel="$work/source/kernel_platform/msm-kernel"
 kernel_out="$work/kernel-out"

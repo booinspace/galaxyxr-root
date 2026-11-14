@@ -93,6 +93,15 @@ docker run --rm -it --platform linux/amd64 \
   galaxyxr-root:azj2 /repo/scripts/build-all.sh
 ```
 
+On this Fedora WSL chroot, use `./scripts/build-fedora.sh` from the repository
+root. It builds the same image under rootful Podman, mounts the SDK in
+`~/Android/Sdk` and the required inputs and output directories, then runs the
+complete build. `./scripts/build-fedora.sh --shell` opens that configured
+container for inspection. The wrapper uses host networking because the WSL
+chroot cannot create Podman's default nftables bridge. Do not run a single
+`build-azj2.sh` phase directly on the Fedora host; its source is in the named
+container volume.
+
 The named volume is necessary on macOS: Samsung's kernel archive contains
 paths that do not extract reliably on a macOS bind mount. Run the ownership
 command once when creating the volume; it lets the normal user build inside
