@@ -1,11 +1,12 @@
 # Galaxy XR AZJ2 root build
 
 Build instructions and scripts for a **Samsung Galaxy XR SM-I610 on
-`I610UES3AZJ2`**. This repository contains no Samsung archive, upstream source
-snapshot, APK, kernel module, exploit binary, or signing key. The build fetches
-pinned public source revisions and uses Samsung source archives that you download
-under Samsung's own terms. The resulting APKs are local builds, not releases
-from the credited maintainers.
+`I610UES3AZJ2`**, plus the source and signed APK for **XR Update Hold**, a small
+app that blocks Samsung firmware updates. This repository contains no Samsung
+archive, upstream source snapshot, kernel module, exploit binary, or signing key.
+The root build fetches pinned public source revisions and uses Samsung source
+archives that you download under Samsung's own terms. The resulting root APKs
+are local builds, not releases from the credited maintainers.
 
 The root chain tested on this firmware uses a locally built DirtyFrag helper
 module and a locally built KernelSU GXR Manager. It changes the running kernel
@@ -17,6 +18,18 @@ The [AZJ2 root release](https://github.com/booinspace/galaxyxr-root/releases/tag
 provides the two locally signed APKs and a checksum file. Both APKs match those
 installed on the AZJ2 test headset byte for byte. Read the install and recovery
 steps below before running DirtyFrag.
+
+## XR Update Hold
+
+[Download XR Update Hold 0.1.0](https://github.com/booinspace/galaxyxr-root/raw/refs/heads/main/releases/GXR-Update-Hold-0.1.0.apk)
+or read its [source, installation and build instructions](apps/update-control/README.md).
+It uses existing root to disable the two Samsung update agents. Its manual-check
+button restores the agents' manifest defaults while keeping automatic scheduling
+off. The saved block survives a full reboot; a boot receiver also reasserts the
+automatic-update setting using a one-time Android permission.
+
+The app contains no exploit. Building it needs only Java and the Android SDK;
+it does not need Samsung's kernel source or the root build below.
 
 ## Requirements
 
@@ -133,8 +146,9 @@ state. Keep a recovery path and do not flash any build output.
 | DirtyFrag | [mitschud/DirtyFrag](https://github.com/mitschud/DirtyFrag), derived from [diabl0w/DFRoot](https://github.com/diabl0w/DFRoot) | `e6a4923545b05fdd8a0847ea1c85cd85aa363146` |
 | KernelSU GXR | [4uva4ek/KernelSU-GXR](https://github.com/4uva4ek/KernelSU-GXR), building on [diabl0w/KernelSU](https://github.com/diabl0w/KernelSU) and [tiann/KernelSU](https://github.com/tiann/KernelSU) | `ec924a8add6a89efda6a3c2e837e5812e0377ee8` (`gxr-v1.0.16`) |
 | Android compiler | [AOSP Clang prebuilt](https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/) | `clang-r416183b` at `3f17560d9bd078537f29294c2bcf80b591821a09` |
+| XR Update Hold | [booinspace](apps/update-control/README.md) | App source in this repository; no third-party runtime dependencies |
 
-The scripts in this repository are MIT-licensed; see [LICENSE](LICENSE).
+The scripts, documentation and XR Update Hold source are MIT-licensed; see [LICENSE](LICENSE).
 Downloaded components retain their own licenses: DirtyFrag is GPL-2.0,
 KernelSU GXR's repository is GPL-3.0 and its kernel code is GPL-2.0. Read the
 license files in the fetched source and Samsung's terms before distributing

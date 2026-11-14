@@ -31,3 +31,18 @@ GXR selects NDK 29.
 The published Samsung source and local `vmlinux` were not proven byte-for-byte
 identical to the kernel shipped on the headset. Matching vermagic and a local
 symbol check are necessary checks, not proof that every device state is safe.
+
+## XR Update Hold
+
+XR Update Hold is local application code by booinspace, covered by this
+repository's MIT license. Its dark-card layout takes visual cues from DirtyFrag;
+no DirtyFrag UI code is copied. The app has no third-party runtime dependencies,
+root exploit or Samsung firmware payload. Android SDK and Gradle build tools
+retain their own licenses and are downloaded separately. The build script pins
+Gradle 9.7.1 and verifies its distribution checksum before extraction.
+
+`releases/GXR-Update-Hold-0.1.0.apk` is the existing locally signed app, with its
+checksum in `releases/SHA256SUMS.txt`. Its private signing key is not distributed.
+The build creates a separate local signing identity and writes rebuilt APKs to
+`work/output/`, leaving the published APK intact. A fresh signing identity
+cannot update the published APK in place.
