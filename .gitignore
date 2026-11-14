@@ -1,6 +1,6 @@
 /work/
+/releases/
 *.apk
-!/releases/GXR-Update-Hold-0.1.0.apk
 *.ko
 *.zip
 *.jks

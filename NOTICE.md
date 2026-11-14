@@ -41,8 +41,10 @@ root exploit or Samsung firmware payload. Android SDK and Gradle build tools
 retain their own licenses and are downloaded separately. The build script pins
 Gradle 9.7.1 and verifies its distribution checksum before extraction.
 
-`releases/GXR-Update-Hold-0.1.0.apk` is the existing locally signed app, with its
-checksum in `releases/SHA256SUMS.txt`. Its private signing key is not distributed.
-The build creates a separate local signing identity and writes rebuilt APKs to
-`work/output/`, leaving the published APK intact. A fresh signing identity
-cannot update the published APK in place.
+The existing locally signed `GXR-Update-Hold-0.1.0.apk` and `SHA256SUMS.txt` are
+published as assets on the
+[XR Update Hold 0.1.0 release](https://github.com/booinspace/galaxyxr-root/releases/tag/update-hold-v0.1.0).
+Built APKs and checksums are not tracked in the source tree. The private signing
+key is not distributed. The build creates a separate local signing identity
+and writes rebuilt APKs to `work/output/`. A fresh signing identity cannot
+update the published APK in place.

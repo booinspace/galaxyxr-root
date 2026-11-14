@@ -28,8 +28,13 @@ services and app updates alone.
 
 ## Install on the headset
 
+Download the APK and `SHA256SUMS.txt` from the
+[XR Update Hold 0.1.0 release](https://github.com/booinspace/galaxyxr-root/releases/tag/update-hold-v0.1.0).
+From the directory containing both downloads, verify and install:
+
 ```sh
-adb install -r releases/GXR-Update-Hold-0.1.0.apk
+sha256sum -c SHA256SUMS.txt
+adb install -r GXR-Update-Hold-0.1.0.apk
 adb shell pm grant boo.puppy.gxr.updatehold android.permission.WRITE_SECURE_SETTINGS
 ```
 
@@ -103,10 +108,11 @@ The script creates a dedicated signing key and password under
 working directory. In Docker, the signing files stay in `work/home/` on the
 host. Keep both files for future builds; they are excluded from this repository.
 
-The existing published APK stays in `releases/`, with its checksum in
-`releases/SHA256SUMS.txt`. A new local build uses your own key and cannot update
-the published APK in place. Keep the original signing identity for updates to
-any locally built installation.
+Published APKs and checksums are attached to
+[GitHub Releases](https://github.com/booinspace/galaxyxr-root/releases/tag/update-hold-v0.1.0).
+The source tree contains no built APKs. A new local build uses your own key and
+cannot update the published APK in place. Keep the original signing identity
+for updates to any locally built installation.
 
 ## Source and license
 

@@ -1,9 +1,12 @@
 # Galaxy XR AZJ2 root build
 
 Build instructions and scripts for a **Samsung Galaxy XR SM-I610 on
-`I610UES3AZJ2`**, plus the source and signed APK for **XR Update Hold**, a small
-app that blocks Samsung firmware updates. This repository contains no Samsung
-archive, upstream source snapshot, kernel module, exploit binary, or signing key.
+`I610UES3AZJ2`**, plus the source for **XR Update Hold**, a small app that blocks
+Samsung firmware updates. Built APKs and checksums are published through
+[GitHub Releases](https://github.com/booinspace/galaxyxr-root/releases). This
+repository tracks source, documentation and build scripts; it contains no
+Samsung archive, upstream source snapshot, APK, kernel module, exploit binary,
+or signing key.
 The root build fetches pinned public source revisions and uses Samsung source
 archives that you download under Samsung's own terms. The resulting root APKs
 are local builds, not releases from the credited maintainers.
@@ -21,7 +24,8 @@ steps below before running DirtyFrag.
 
 ## XR Update Hold
 
-[Download XR Update Hold 0.1.0](https://github.com/booinspace/galaxyxr-root/raw/refs/heads/main/releases/GXR-Update-Hold-0.1.0.apk)
+[Download XR Update Hold 0.1.0](https://github.com/booinspace/galaxyxr-root/releases/download/update-hold-v0.1.0/GXR-Update-Hold-0.1.0.apk)
+and its [checksum](https://github.com/booinspace/galaxyxr-root/releases/download/update-hold-v0.1.0/SHA256SUMS.txt),
 or read its [source, installation and build instructions](apps/update-control/README.md).
 It uses existing root to disable the two Samsung update agents. Its manual-check
 button restores the agents' manifest defaults while keeping automatic scheduling
